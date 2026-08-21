@@ -17,6 +17,8 @@ entry = [
     "A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"
 ]
 
+# Rotor Turnover points for each rotor respectively
+rotorTurnover = ["Q","E","V","J","Z"]
 
 def startEnigma(plainText):
     # Saving the used rotors index in array
@@ -27,9 +29,6 @@ def startEnigma(plainText):
         
     # Rotor position used
     rotorPosision = [14, 15, 16]
-
-    # Rotor Turnover points for each rotor respectively
-    rotorTurnover = ["Q","E","V","J","Z"]
 
     # Using reverter B for this example
     reflectorUsed = 1
@@ -60,19 +59,20 @@ def startEnigma(plainText):
         hasIncremented = [False,False,False]
         # turnover detection
         for rotorID in rotorsUsed[1:]:
-            if rotorPosision[rotorsUsed.index(rotorID)] == entry.index(rotorTurnover[rotorID]):
-                rotorPosision[rotorsUsed.index(rotorID)] += 1 # Increment current rotor
-                hasIncremented[rotorsUsed.index(rotorID)] = True # Note down rotor incrementation
+            rotorIndex = rotorsUsed.index(rotorID) # Index of the current rotor being used e.g. rotor formation is IV-III-I the index of IV in the order would be 0, III would be 1 and I would be 2 
+            leftwardRotor = rotorsUsed.index(rotorID)-1 # The index of the rotor left of the current rotor
+            if rotorPosision[rotorIndex] == entry.index(rotorTurnover[rotorID]):
+                rotorPosision[rotorIndex] += 1 # Increment current rotor
+                hasIncremented[rotorIndex] = True # Note down rotor incrementation
                 print("Turnover! for rotor", rotorsUsed.index(rotorID))
                 if rotorsUsed[0] != rotorID: # check if current rotor is leftmost
-                    if hasIncremented[rotorsUsed.index(rotorID)-1]: # check if already incremented
-                        print("Rotor",rotorsUsed.index(rotorID),"has already been incremented. Skipped.")
+                    if hasIncremented[leftwardRotor]: # check if already incremented
+                        print("Rotor",rotorIndex,"has already been incremented. Skipped.")
                     else:
-                        rotorPosision[rotorsUsed.index(rotorID)-1] += 1
-                        rotorPosision[rotorsUsed.index(rotorID)-1] = (rotorPosision[rotorsUsed.index(rotorID)-1])%26
-                        hasIncremented[rotorsUsed.index(rotorID)-1]=True
-                        print("Rotor",rotorsUsed.index(rotorID),"has been incremented to",entry[rotorPosision[rotorsUsed.index(rotorID)-1]])
-                rotorPosision[rotorsUsed.index(rotorID)] %= 26
+                        rotorPosision[leftwardRotor] = (rotorPosision[leftwardRotor] + 1)%26
+                        hasIncremented[leftwardRotor] = True
+                        print("Rotor",rotorIndex,"has been incremented to",entry[rotorPosision[leftwardRotor]])
+                rotorPosision[rotorIndex] %= 26
 
         if not hasIncremented[-1]:
             rotorPosision[-1] += 1
@@ -82,16 +82,18 @@ def startEnigma(plainText):
         
         currentLetter = entry.index(letter)
         for currentRotor in list(reversed(rotorsUsed)): 
-            currentLetter = (currentLetter + rotorPosision[rotorsUsed.index(currentRotor)] - ringstellung[rotorsUsed.index(currentRotor)]) % 26
+            currentRotorIndex = rotorsUsed.index(currentRotor) # Index of the current rotor
+            currentLetter = (currentLetter + rotorPosision[currentRotorIndex] - ringstellung[currentRotorIndex]) % 26
             currentLetter = entry.index(rotor[currentRotor][currentLetter]) 
-            currentLetter = (currentLetter - rotorPosision[rotorsUsed.index(currentRotor)] + ringstellung[rotorsUsed.index(currentRotor)]) % 26
+            currentLetter = (currentLetter - rotorPosision[currentRotorIndex] + ringstellung[currentRotorIndex]) % 26
         
         currentLetter = entry.index(reflector[reflectorUsed][currentLetter])
         
         for currentRotor in rotorsUsed: 
-                currentLetter = (currentLetter + rotorPosision[rotorsUsed.index(currentRotor)] - ringstellung[rotorsUsed.index(currentRotor)]) % 26
+                currentRotorIndex = rotorsUsed.index(currentRotor) # Index of the current rotor
+                currentLetter = (currentLetter + rotorPosision[currentRotorIndex] - ringstellung[currentRotorIndex]) % 26
                 currentLetter = rotor[currentRotor].index(entry[currentLetter])
-                currentLetter = (currentLetter - rotorPosision[rotorsUsed.index(currentRotor)] + ringstellung[rotorsUsed.index(currentRotor)]) % 26
+                currentLetter = (currentLetter - rotorPosision[currentRotorIndex] + ringstellung[currentRotorIndex]) % 26
         if entry[currentLetter] in plugboard:     
             ciphertext.append(plugboard[entry[currentLetter]])
         else:
@@ -101,4 +103,4 @@ def startEnigma(plainText):
     print("Finished!")
     return ciphertext
 
-print(startEnigma("IBAVLEQQLTIUMMJREOCIIYYVOA"))
+print(startEnigma("NUMBERPHILE"))
