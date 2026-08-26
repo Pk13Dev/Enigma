@@ -1,60 +1,6 @@
 from multiprocessing import Process
 from itertools import product
-
-# If I know what the plugboard does to A, the rotors tell me what the plugboard MUST do to B.
-
-# P(S₁(P(A))) = B means Input A -> Plugboard P -> Scrambler 1 -> Plugboard P = B
-# S₁(P(A)) = P(B) means Input A -> Plugboard P -> Scrambler 1 = B -> Plugboard P
-# This is basically whats going on in the electrical for each rotation of the scrabbler
-# Rotor moves, 26 electrical wirings go through steckered variations
-# Example, Rotor turns A--P₁-->K so that P(S₁(P(A))) = K
-# Let's say S₁(G) = R is being tested, Bombe would automatically assume A:G --S₁--> K:R
-# Why? because S₁(P(A)) and S₁(G) so A is steckered to G.
-# therefore, S₁(P(A))) = P(B) is S₁(G) = P(B) and S₁(G) = R meaning that P(B) = R so B is steckered to R.
-# S₂ would then be tested and would test for contradictions say B is steckered to O when testing S₂(J) = O
-# Thats a contradiction because B cannot be steckered to R and O, it can only be steckered to one letter.
-
-# Diagonal board interprets steckering both ways where B <-> R and R <-> B
-# This also makes B:R and R:B which is very important
-
-# The bombe doesn't guess the rotor setting being IV-I-III it is predetermined by the operator
-
-# Each drum have an offset to them, so they simultaniously check for steckers from position 1-6 as an example
-# So drum 1 would be base setting + 0, Drum 2 would be base setting + 1 and so on until drum 6 would be at base + 5
-
-# Ringstellung is not figured out by the bombe, it's figured out by cryptographers after through indicators, turnover information and other cryptanalytic information
-# Bombe focuses primarily on the rotor-core orientation or rotorPosision as i call it
-
-# Ordinary menus were generally based on the assumption that a turnover did not occur inside the crib
-# Hoppity was used incase of a turnover event
-# Implementation could use actual enigma states and have accurate turnover behaviour
-
-# The 26 electrical wire setup is the physical implementation of what we'd call constraint propagation today.
-
-# Output: Wheel order, rotor positions and possible stecker. That would be thrown into a checking machine. if not false step, put into enigma/Typex and decrypt
-
-# Checking phase derives multiple steckers instead of raw bombe output. 
-# The checker is literally the engima minus the plugboard
-# Example:
-# A --1--> B and bombe farted out A <-> G
-# P(A) = G so we have S₁(G) -> P(B)
-# Since we know the rotor positions and the exact rotors used and in which order they were placed,
-# We throw G into the scrambler, we get P(B) which we can appoint an example letter of K
-# So, by knowing just A <-> G we got B <-> K
-# rinse and repeat :D
-# Loops/Closures in ciphered messages helped verify hypotheses as it would loop back to the original hypothesis, confirming other hypotheses
-# unplugged steckers exist, e.g. P(C) = C
-# Only able derive steckers throught the menu
-# Do ts automatically and call it the "Scrutator Maximus"
-
-# TLDR:
-# The Bombe physically swept through possible rotor-core configurations while 
-# an electrical network representing the crib, the simulated Enigma scramblers, 
-# and all reciprocal plugboard possibilities propagated constraints in parallel; 
-# configurations in which every possible plugboard interpretation became impossible 
-# were passed over, while configurations leaving a consistent possibility caused 
-# a stop for further checking.
-
+from itertools import islice
 
 # Hardcodded rotor, reflector and entry disc wirings alligned with the Enigma I (Specifically service Enigma used by the German Army and Air Force)
 rotor = [
@@ -102,14 +48,49 @@ def scrambler(letter, rotorsUsed, reflectorUsed, rotorPosision):
 # aka, where is this letter in the context of the whole plaintext/ciphertext message?
 def menuBuilder(plaintext, ciphertext):
     menuList = []
+    letterStack = []
+    normieArray = []
+    letterArray = []
     if len(plaintext) == len(ciphertext):
-        for i in range(len(plaintext)):
-            if plaintext[i] == ciphertext[i]:
-                print("plaintext and ciphertext letter equal to eachother, impossible")
-                return 0
-            menuList.append((plaintext[i], ciphertext[i], i))
+        for letter in entry:
+            count = plaintext.count(letter) + ciphertext.count(letter)
+            if count > 1:
+                letterArray.append((letter, count))
+            if count != None:
+                normieArray.append((letter, count))
+        letterArray = sorted(letterArray, key=lambda x: x[1],reverse=True)
+        print("Sorted letter array:", letterArray)
+        letterStack.append(letterArray[0][0])
+        totalCount = 0
+        for letter, count in letterArray:
+            if totalCount <= 12:
+                for index in range(len(plaintext)):
+                    if totalCount <= 12:
+                        if plaintext[index] == letter or ciphertext[index] == letter:
+                            menuList.append((plaintext[index], ciphertext[index], index))
+                            totalCount += 1
+                    else:
+                        break
+            else:
+                break
+                
+        # for letter in letterStack:
+        #     for index in range(len(plaintext)):
+        #         if plaintext[index] == letter and ciphertext[index] not in letterStack:
+        #             menuList.append((plaintext[index], ciphertext[index], index))
+        #             letterStack.append(ciphertext[index])
+        #         if ciphertext[index] == letter and plaintext[index] not in letterStack:
+        #             menuList.append((plaintext[index], ciphertext[index], index))
+        #             letterStack.append(plaintext[index])
+                
+        # for index in range(len(plaintext)):
+        #     if any(plaintext[index] or ciphertext[index] for letter,count in letterArray):
+        #         menuList.append((plaintext[index], ciphertext[index], index))
+
         menuTuple = tuple(menuList)
-        print("MenuTuple:",menuTuple)
+        print("normie:", len(normieArray), "(No count limitation)")
+        print("limit:", len(letterArray), "(count > 1 + relation limitation)")
+        print("MenuTuple:",len(menuTuple),"Content:",menuTuple)
         return menuTuple
     elif len(plaintext) != len(ciphertext):
         print("plaintext/ciphertext length is not valid")
@@ -151,10 +132,10 @@ def computeScramblers(rotorsUsed, rotorPosision, reflectorUsed, menu):
 
     return newMap
 
-# T T - Valid + New
-# T F - Valid + known
-# F F - Contradicion
 def steckerCheck(stecker, L1, L2):
+    # T T - Valid + New
+    # T F - Valid + known
+    # F F - Contradicion
     if L1 in stecker and stecker[L1] != L2:
         return False, False
 
@@ -198,11 +179,11 @@ def hypothesisChecker(menu, scramblerMap, inputLetter, guessedLetter):
                                 hasChangeOccurred = True
     return True, currentHypothesis       
 
-def bombe(menu, letter, rotorsUsed, reflectorUsed):
+def bombe(menu, letter, rotorsUsed, reflectorUsed, inpRotorPosition):
     # Menu - Tuple of Tuples - (t1(plain, cipher, index), ... , tn(plain, cipher, index)) - Connection between the ciphertext and plaintext
     # rotorUsed - Int List - Order of individual unique rotors (e.g. V-III-IV)
-    
-    for rotorPosision in product(range(26), repeat=3):
+    startIndex = inpRotorPosition[0] * 26**2 + inpRotorPosition[1] * 26 + inpRotorPosition[2] + 1
+    for rotorPosision in islice(product(range(26), repeat=3), startIndex, None):
         rotorPosision = list(rotorPosision)
         scramblerMap = computeScramblers(
             rotorsUsed=rotorsUsed,
@@ -228,13 +209,28 @@ def bombe(menu, letter, rotorsUsed, reflectorUsed):
                 print()
                 print("Hypothesis:", inputLetter, "<->", guessLetter)
                 print("Derived plugboard:")
-
+                knownSteckers = []
                 for i in list(stecker.keys()):
-                    print(i, "<->", stecker[i])
+                    if i not in knownSteckers:
+                        print(i, "<->", stecker[i])
+                        knownSteckers.append(stecker[i])
             print("------------------------")
             result = []
             resultPlugboard = []
-            break
-    return 0
+            return rotorPosision, (inputLetter, guessLetter)
+    return None, None
 
-bombe(menu=menuBuilder("NUMBERPHILE","HZICLOWIUIG"),letter="I",rotorsUsed=[1, 3, 4],reflectorUsed=1)
+currentMenu = menuBuilder("TODAYSWEATHERREPORTLIGHTRAINANDCOLDTEMPERATUREHEILHITTLER","HUJMQKISNCDPOHCDRWVVXKAQXTHMSMKFNWWCZAIKLEHPPVGFYELFYNRZG")
+selectedLetter = "E"
+rotorsUsed=[1, 3, 4]
+rotorPosition = [0,0,0]
+reflectorUsed=1
+for i in range(10):
+    newRotorPosition, hypothesisTuple = bombe(
+        menu=currentMenu,letter=selectedLetter,rotorsUsed=rotorsUsed,reflectorUsed=reflectorUsed, inpRotorPosition=rotorPosition
+        )
+    if newRotorPosition or hypothesisTuple == None:
+        print("None returned by the bome")
+        break
+    rotorPosition = newRotorPosition
+    

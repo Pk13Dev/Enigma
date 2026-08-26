@@ -28,7 +28,7 @@ def startEnigma(plainText):
     ringstellung = [1,20,11]
         
     # Rotor position used
-    rotorPosision = [14, 15, 16]
+    rotorPosision = [14, 15, 0]
 
     # Using reverter B for this example
     reflectorUsed = 1
@@ -103,4 +103,4 @@ def startEnigma(plainText):
     print("Finished!")
     return ciphertext
 
-print(startEnigma("NUMBERPHILE"))
+print(startEnigma("TODAYSWEATHERREPORTLIGHTRAINANDCOLDTEMPERATUREHEILHITTLER"))
