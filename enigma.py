@@ -21,30 +21,23 @@ entry = [
 rotorTurnover = ["Q","E","V","J","Z"]
 
 def startEnigma(plainText):
-    # Saving the used rotors index in array
-    rotorsUsed = [1, 3, 4]
+    rotorsUsed = [0, 1, 2]     
+    reflectorUsed = 1            
 
-    # Ringstellung setting for the rotors
-    ringstellung = [1,20,11]
-        
-    # Rotor position used
-    rotorPosision = [14, 15, 0]
+    ringstellung = [0, 0, 0]     
+    rotorPosision = [0, 0, 0]    
 
-    # Using reverter B for this example
-    reflectorUsed = 1
-    
-    # Plug board setting
     plugboard = {
-        "A":"V", "V":"A",
-        "B":"S", "S":"B",
-        "C":"G", "G":"C",
-        "D":"L", "L":"D",
-        "F":"U", "U":"F",
-        "H":"Z", "Z":"H",
-        "I":"N", "N":"I",
-        "K":"M", "M":"K",
-        "O":"W", "W":"O",
-        "R":"X", "X":"R"
+        "A":"M", "M":"A",
+        "B":"L", "L":"B",
+        "C":"Q", "Q":"C",
+        "D":"R", "R":"D",
+        "E":"X", "X":"E",
+        "F":"S", "S":"F",
+        "G":"T", "T":"G",
+        "H":"U", "U":"H",
+        "I":"V", "V":"I",
+        "J":"W", "W":"J"
     }
     # Cipher text list initalization
     ciphertext = []        
@@ -103,4 +96,4 @@ def startEnigma(plainText):
     print("Finished!")
     return ciphertext
 
-print(startEnigma("TODAYSWEATHERREPORTLIGHTRAINANDCOLDTEMPERATUREHEILHITTLER"))
+print(startEnigma("HELLOWORLDIAMBOB"))

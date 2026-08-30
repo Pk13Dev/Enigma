@@ -60,33 +60,10 @@ def menuBuilder(plaintext, ciphertext):
                 normieArray.append((letter, count))
         letterArray = sorted(letterArray, key=lambda x: x[1],reverse=True)
         print("Sorted letter array:", letterArray)
-        letterStack.append(letterArray[0][0])
-        totalCount = 0
-        for letter, count in letterArray:
-            if totalCount <= 12:
-                for index in range(len(plaintext)):
-                    if totalCount <= 12:
-                        if plaintext[index] == letter or ciphertext[index] == letter:
-                            menuList.append((plaintext[index], ciphertext[index], index))
-                            totalCount += 1
-                    else:
-                        break
-            else:
-                break
-                
-        # for letter in letterStack:
-        #     for index in range(len(plaintext)):
-        #         if plaintext[index] == letter and ciphertext[index] not in letterStack:
-        #             menuList.append((plaintext[index], ciphertext[index], index))
-        #             letterStack.append(ciphertext[index])
-        #         if ciphertext[index] == letter and plaintext[index] not in letterStack:
-        #             menuList.append((plaintext[index], ciphertext[index], index))
-        #             letterStack.append(plaintext[index])
-                
-        # for index in range(len(plaintext)):
-        #     if any(plaintext[index] or ciphertext[index] for letter,count in letterArray):
-        #         menuList.append((plaintext[index], ciphertext[index], index))
-
+        for i in range(len(plaintext)):
+            menuList.append(
+                (plaintext[i], ciphertext[i], i)
+            )
         menuTuple = tuple(menuList)
         print("normie:", len(normieArray), "(No count limitation)")
         print("limit:", len(letterArray), "(count > 1 + relation limitation)")
@@ -99,11 +76,31 @@ def menuBuilder(plaintext, ciphertext):
         print("Undefined error at menu builder")
         return 0
 
-def rotorOffset(rotorPosition, offset):
-    return [rotorPosition[0],
-            rotorPosition[1],
-            (rotorPosition[2] + offset) % 26
-            ]
+def rotorOffset(rotorPosition, offset, rotorsUsed):
+    position = rotorPosition.copy()
+
+    rightTurnover = entry.index(rotorTurnover[rotorsUsed[2]])
+    middleTurnover = entry.index(rotorTurnover[rotorsUsed[1]])
+
+    for _ in range(offset):
+
+        rightAtTurnover = position[2] == rightTurnover
+        middleAtTurnover = position[1] == middleTurnover
+
+        # Middle rotor at notch pushes left rotor
+        if middleAtTurnover:
+            position[0] = (position[0] + 1) % 26
+
+        # Middle rotor moves if:
+        # - right rotor is at its notch
+        # - OR middle rotor is at its own notch (double step)
+        if rightAtTurnover or middleAtTurnover:
+            position[1] = (position[1] + 1) % 26
+
+        # Right rotor always moves
+        position[2] = (position[2] + 1) % 26
+
+    return position
 
 def computeScramblers(rotorsUsed, rotorPosision, reflectorUsed, menu):
     newMap = {}
@@ -114,7 +111,7 @@ def computeScramblers(rotorsUsed, rotorPosision, reflectorUsed, menu):
         if offset in newMap:
             continue
 
-        offsetPosition = rotorOffset(rotorPosision, offset)
+        offsetPosition = rotorOffset(rotorPosision, offset, rotorsUsed)
 
         scrambledAlpha = []
 
@@ -220,17 +217,16 @@ def bombe(menu, letter, rotorsUsed, reflectorUsed, inpRotorPosition):
             return rotorPosision, (inputLetter, guessLetter)
     return None, None
 
-currentMenu = menuBuilder("TODAYSWEATHERREPORTLIGHTRAINANDCOLDTEMPERATUREHEILHITTLER","HUJMQKISNCDPOHCDRWVVXKAQXTHMSMKFNWWCZAIKLEHPPVGFYELFYNRZG")
-selectedLetter = "E"
-rotorsUsed=[1, 3, 4]
+currentMenu = menuBuilder("HELLOWORLDIAMBOB","ZFBQMUAHSEDNLYNE")
+selectedLetter = "A"
+rotorsUsed=[0, 1, 2]
 rotorPosition = [0,0,0]
 reflectorUsed=1
 for i in range(10):
     newRotorPosition, hypothesisTuple = bombe(
         menu=currentMenu,letter=selectedLetter,rotorsUsed=rotorsUsed,reflectorUsed=reflectorUsed, inpRotorPosition=rotorPosition
         )
-    if newRotorPosition or hypothesisTuple == None:
-        print("None returned by the bome")
+    if newRotorPosition is None or hypothesisTuple is None:
+        print("None returned by the bombe")
         break
     rotorPosition = newRotorPosition
-    
