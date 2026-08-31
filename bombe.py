@@ -1,4 +1,4 @@
-from multiprocessing import Process
+from multiprocessing import Process, Queue
 from itertools import product
 from itertools import islice
 
@@ -48,10 +48,14 @@ def scrambler(letter, rotorsUsed, reflectorUsed, rotorPosision):
 # aka, where is this letter in the context of the whole plaintext/ciphertext message?
 def menuBuilder(plaintext, ciphertext):
     menuList = []
-    letterStack = []
     normieArray = []
     letterArray = []
     if len(plaintext) == len(ciphertext):
+        for i in range(len(plaintext)):
+            if plaintext[i] == ciphertext[i]:
+                print("plaintext/ciphertext characters are not valid (Impossible character to character entry)")
+                print("Enigma cannot have the same input and output, such as the", i, "letter in both cipher and plain")
+                return 0
         for letter in entry:
             count = plaintext.count(letter) + ciphertext.count(letter)
             if count > 1:
@@ -59,16 +63,16 @@ def menuBuilder(plaintext, ciphertext):
             if count != None:
                 normieArray.append((letter, count))
         letterArray = sorted(letterArray, key=lambda x: x[1],reverse=True)
-        print("Sorted letter array:", letterArray)
+        # print("Sorted letter array:", letterArray)
         for i in range(len(plaintext)):
             menuList.append(
                 (plaintext[i], ciphertext[i], i)
             )
         menuTuple = tuple(menuList)
-        print("normie:", len(normieArray), "(No count limitation)")
-        print("limit:", len(letterArray), "(count > 1 + relation limitation)")
-        print("MenuTuple:",len(menuTuple),"Content:",menuTuple)
-        return menuTuple
+        # print("normie:", len(normieArray), "(No count limitation)")
+        # print("limit:", len(letterArray), "(count > 1 + relation limitation)")
+        # print("MenuTuple:",len(menuTuple),"Content:",menuTuple)
+        return menuTuple, letterArray
     elif len(plaintext) != len(ciphertext):
         print("plaintext/ciphertext length is not valid")
         return 0
@@ -176,7 +180,7 @@ def hypothesisChecker(menu, scramblerMap, inputLetter, guessedLetter):
                                 hasChangeOccurred = True
     return True, currentHypothesis       
 
-def bombe(menu, letter, rotorsUsed, reflectorUsed, inpRotorPosition):
+def bombe(menu, letter, rotorsUsed, reflectorUsed, inpRotorPosition, queue):
     # Menu - Tuple of Tuples - (t1(plain, cipher, index), ... , tn(plain, cipher, index)) - Connection between the ciphertext and plaintext
     # rotorUsed - Int List - Order of individual unique rotors (e.g. V-III-IV)
     startIndex = inpRotorPosition[0] * 26**2 + inpRotorPosition[1] * 26 + inpRotorPosition[2] + 1
@@ -214,19 +218,44 @@ def bombe(menu, letter, rotorsUsed, reflectorUsed, inpRotorPosition):
             print("------------------------")
             result = []
             resultPlugboard = []
-            return rotorPosision, (inputLetter, guessLetter)
-    return None, None
+            queue.put((rotorPosision, (inputLetter, guessLetter)))
+    queue.put((None, None))
 
-currentMenu = menuBuilder("HELLOWORLDIAMBOB","ZFBQMUAHSEDNLYNE")
-selectedLetter = "A"
-rotorsUsed=[0, 1, 2]
-rotorPosition = [0,0,0]
-reflectorUsed=1
-for i in range(10):
-    newRotorPosition, hypothesisTuple = bombe(
-        menu=currentMenu,letter=selectedLetter,rotorsUsed=rotorsUsed,reflectorUsed=reflectorUsed, inpRotorPosition=rotorPosition
-        )
-    if newRotorPosition is None or hypothesisTuple is None:
-        print("None returned by the bombe")
-        break
-    rotorPosition = newRotorPosition
+def startBombe(instanceNum, currentmenu, letterMOArray, rotorsUsed, rotorPosition, reflectorUsed):
+    print("starting bombe!")
+    processes = []
+    queue = Queue()
+    for i in range(instanceNum):
+        process = Process(target=bombe, args=(currentmenu, letterMOArray[i][0], rotorsUsed, reflectorUsed, rotorPosition, queue))
+        process.start()
+        processes.append(process)
+    for i in processes:
+        newRotorPosition, hypothesisTuple = queue.get()
+
+        if newRotorPosition is None or hypothesisTuple is None:
+            print(f"None returned by the bombe {i}")
+        else:
+            print(newRotorPosition, hypothesisTuple, f"by bombe {i._identity[0]}")
+    for p in processes:
+        p.join()
+if __name__ == "__main__":  
+    print("Welcome to the Bombe, insipired by the welchman turing Bombe! ")
+    plaintext = "".join(filter(str.isalpha, input("Provide input plaintext: ").upper().replace(" ","")))
+    ciphertext = "".join(filter(str.isalpha,input("Provide input ciphertext: ").upper().replace(" ","")))
+    # # #HELLOWORLDIAMBOB
+    # # #ZFBQMUAHSEDNLYNE
+    print("plain:", plaintext, "cipher:", ciphertext, "has been inputted")
+    currentMenu, letterMOArray = menuBuilder(plaintext,ciphertext)
+    # print(currentMenu)
+    # rotorsUsed = [0, 1, 2]
+    # rotorPosition = [0,0,0]
+    # reflectorUsed = 1
+    rotorsUsed = list(map(int, list(filter(str.isnumeric, input("Which rotors should be used? (Input as Num Num Num]', limit 0-4): ").replace(" ", "")))))
+    print("rotorsUsed:",rotorsUsed, type(rotorsUsed), type(rotorsUsed[0]))
+    rotorPosition = list(map(int, list(filter(str.isnumeric, input("Which rotor starting position should be used? (Input as Num Num Num]', limit 0-25): ").replace(" ", "")))))
+    print("rotorPosition:",rotorPosition)
+    reflector = int(input("Which reflector should be used?"))
+    print("Reflector:",reflector)
+    instanceNum = int(input("How many instances would you like to run?: "))
+    startBombe(instanceNum,currentMenu,letterMOArray)
+
