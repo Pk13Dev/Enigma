@@ -85,7 +85,6 @@ def rotorOffset(rotorPosition, offset, rotorsUsed):
     middleTurnover = entry.index(rotorTurnover[rotorsUsed[1]])
 
     for i in range(offset):
-
         rightAtTurnover = (position[2] == rightTurnover)
         middleAtTurnover = (position[1] == middleTurnover)
 
@@ -114,8 +113,6 @@ def computeScramblers(rotorsUsed, rotorPosision, reflectorUsed, menu):
             continue
 
         offsetPosition = rotorOffset(rotorPosision, offset, rotorsUsed)
-        # time.sleep(0.5)
-        # print(offsetPosition)
 
         scrambledAlpha = []
 
@@ -219,13 +216,13 @@ def bombe(menu, letter, rotorsUsed, reflectorUsed, queue):
             queue.put((rotorPosision, (inputLetter, guessLetter)))
     queue.put((None, None))
 
-def startBombe(instanceNum, currentmenu, letterMOArray, rotorsUsed, rotorPosition, reflectorUsed):
+def startBombe(instanceNum, currentmenu, letterMOArray, rotorsUsed, reflectorUsed):
     print("starting bombe!")
     # print(instanceNum, currentmenu, letterMOArray, rotorsUsed, rotorPosition, reflectorUsed)
     processes = []
     queue = Queue()
     for i in range(instanceNum):
-        process = Process(target=bombe, args=(currentmenu, letterMOArray[i][0], rotorsUsed, reflectorUsed, rotorPosition, queue))
+        process = Process(target=bombe, args=(currentmenu, letterMOArray[i][0], rotorsUsed, reflectorUsed, queue))
         process.start()
         processes.append(process)
     for i in processes:
@@ -240,22 +237,20 @@ def startBombe(instanceNum, currentmenu, letterMOArray, rotorsUsed, rotorPositio
 
 if __name__ == "__main__":  
     print("Welcome to the Bombe, insipired by the welchman turing Bombe! ")
-    # plaintext = "".join(filter(str.isalpha, input("Provide input plaintext: ").upper().replace(" ","")))
-    # ciphertext = "".join(filter(str.isalpha,input("Provide input ciphertext: ").upper().replace(" ","")))
+    plaintext = "".join(filter(str.isalpha, input("Provide input plaintext: ").upper().replace(" ","")))
+    ciphertext = "".join(filter(str.isalpha,input("Provide input ciphertext: ").upper().replace(" ","")))
     # # #HELLOWORLDIAMBOB
     # # #ZFBQMUAHSEDNLYNE
-    plaintext = "HELLOWORLDIAMBOB"
-    ciphertext= "ZFBQMUAHSEDNLYNE"
+    # plaintext = "HELLOWORLDIAMBOB"
+    # ciphertext= "ZFBQMUAHSEDNLYNE"
     print("plain:", plaintext, "cipher:", ciphertext, "has been inputted")
     currentMenu, letterMOArray = menuBuilder(plaintext,ciphertext)
-    # print(currentMenu)
-    rotorsUsed = [0, 1, 2]
-    rotorPosition = [0,0,2]
-    reflectorUsed = 1
-    # rotorsUsed = list(map(int, list(filter(str.isnumeric, input("Which rotors should be used? (Input as Num Num Num]', limit 0-4): ").replace(" ", "")))))
-    # print("rotorsUsed:",rotorsUsed, type(rotorsUsed), type(rotorsUsed[0]))
-    # reflectorUsed = int(input("Which reflector should be used?"))
-    # print("Reflector:",reflector)
+    # rotorsUsed = [0, 1, 2]
+    # reflectorUsed = 1
+    rotorsUsed = list(map(int, list(filter(str.isnumeric, input("Which rotors should be used? (Input as Num Num Num]', limit 0-4): ").replace(" ", "")))))
+    print("rotorsUsed:",rotorsUsed, type(rotorsUsed), type(rotorsUsed[0]))
+    reflectorUsed = int(input("Which reflector should be used?"))
+    print("Reflector:",reflector)
     instanceNum = int(input("How many instances would you like to run?: "))
     startBombe(
         instanceNum=instanceNum,
