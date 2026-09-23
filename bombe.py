@@ -1,6 +1,7 @@
 from multiprocessing import Process, Queue
 from itertools import product
 from itertools import islice
+import time
 
 # Hardcodded rotor, reflector and entry disc wirings alligned with the Enigma I (Specifically service Enigma used by the German Army and Air Force)
 rotor = [
@@ -56,6 +57,10 @@ def menuBuilder(plaintext, ciphertext):
                 print("plaintext/ciphertext characters are not valid (Impossible character to character entry)")
                 print("Enigma cannot have the same input and output, such as the", i, "letter in both cipher and plain")
                 return 0
+            menuList.append(
+                (plaintext[i], ciphertext[i], i)
+            )
+        
         for letter in entry:
             count = plaintext.count(letter) + ciphertext.count(letter)
             if count > 1:
@@ -63,15 +68,8 @@ def menuBuilder(plaintext, ciphertext):
             if count != None:
                 normieArray.append((letter, count))
         letterArray = sorted(letterArray, key=lambda x: x[1],reverse=True)
-        # print("Sorted letter array:", letterArray)
-        for i in range(len(plaintext)):
-            menuList.append(
-                (plaintext[i], ciphertext[i], i)
-            )
+
         menuTuple = tuple(menuList)
-        # print("normie:", len(normieArray), "(No count limitation)")
-        # print("limit:", len(letterArray), "(count > 1 + relation limitation)")
-        # print("MenuTuple:",len(menuTuple),"Content:",menuTuple)
         return menuTuple, letterArray
     elif len(plaintext) != len(ciphertext):
         print("plaintext/ciphertext length is not valid")
@@ -86,10 +84,10 @@ def rotorOffset(rotorPosition, offset, rotorsUsed):
     rightTurnover = entry.index(rotorTurnover[rotorsUsed[2]])
     middleTurnover = entry.index(rotorTurnover[rotorsUsed[1]])
 
-    for _ in range(offset):
+    for i in range(offset):
 
-        rightAtTurnover = position[2] == rightTurnover
-        middleAtTurnover = position[1] == middleTurnover
+        rightAtTurnover = (position[2] == rightTurnover)
+        middleAtTurnover = (position[1] == middleTurnover)
 
         # Middle rotor at notch pushes left rotor
         if middleAtTurnover:
@@ -116,6 +114,8 @@ def computeScramblers(rotorsUsed, rotorPosision, reflectorUsed, menu):
             continue
 
         offsetPosition = rotorOffset(rotorPosision, offset, rotorsUsed)
+        # time.sleep(0.5)
+        # print(offsetPosition)
 
         scrambledAlpha = []
 
@@ -171,20 +171,19 @@ def hypothesisChecker(menu, scramblerMap, inputLetter, guessedLetter):
                 if isNew:
                     hasChangeOccurred = True
             if cipherLetter in currentHypothesis:
-                            steckeredInput = currentHypothesis[cipherLetter]
-                            result = scramblerMap[offset][entry.index(steckeredInput)]
-                            isValid, isNew = steckerCheck(stecker=currentHypothesis, L1=plainLetter, L2=result)
-                            if not isValid:
-                                return False, currentHypothesis
-                            if isNew:
-                                hasChangeOccurred = True
+                steckeredInput = currentHypothesis[cipherLetter]
+                result = scramblerMap[offset][entry.index(steckeredInput)]
+                isValid, isNew = steckerCheck(stecker=currentHypothesis, L1=plainLetter, L2=result)
+                if not isValid:
+                    return False, currentHypothesis
+                if isNew:
+                    hasChangeOccurred = True
     return True, currentHypothesis       
 
-def bombe(menu, letter, rotorsUsed, reflectorUsed, inpRotorPosition, queue):
+def bombe(menu, letter, rotorsUsed, reflectorUsed, queue):
     # Menu - Tuple of Tuples - (t1(plain, cipher, index), ... , tn(plain, cipher, index)) - Connection between the ciphertext and plaintext
     # rotorUsed - Int List - Order of individual unique rotors (e.g. V-III-IV)
-    startIndex = inpRotorPosition[0] * 26**2 + inpRotorPosition[1] * 26 + inpRotorPosition[2] + 1
-    for rotorPosision in islice(product(range(26), repeat=3), startIndex, None):
+    for rotorPosision in islice(product(range(26), repeat=3), 0, None):
         rotorPosision = list(rotorPosision)
         scramblerMap = computeScramblers(
             rotorsUsed=rotorsUsed,
@@ -206,7 +205,6 @@ def bombe(menu, letter, rotorsUsed, reflectorUsed, inpRotorPosition, queue):
             print("Hypothesised plugboard:")
             # print(resultPlugboard)
             for guessLetter, stecker in zip(result, resultPlugboard):
-
                 print()
                 print("Hypothesis:", inputLetter, "<->", guessLetter)
                 print("Derived plugboard:")
@@ -223,6 +221,7 @@ def bombe(menu, letter, rotorsUsed, reflectorUsed, inpRotorPosition, queue):
 
 def startBombe(instanceNum, currentmenu, letterMOArray, rotorsUsed, rotorPosition, reflectorUsed):
     print("starting bombe!")
+    # print(instanceNum, currentmenu, letterMOArray, rotorsUsed, rotorPosition, reflectorUsed)
     processes = []
     queue = Queue()
     for i in range(instanceNum):
@@ -238,24 +237,31 @@ def startBombe(instanceNum, currentmenu, letterMOArray, rotorsUsed, rotorPositio
             print(newRotorPosition, hypothesisTuple, f"by bombe {i._identity[0]}")
     for p in processes:
         p.join()
+
 if __name__ == "__main__":  
     print("Welcome to the Bombe, insipired by the welchman turing Bombe! ")
-    plaintext = "".join(filter(str.isalpha, input("Provide input plaintext: ").upper().replace(" ","")))
-    ciphertext = "".join(filter(str.isalpha,input("Provide input ciphertext: ").upper().replace(" ","")))
+    # plaintext = "".join(filter(str.isalpha, input("Provide input plaintext: ").upper().replace(" ","")))
+    # ciphertext = "".join(filter(str.isalpha,input("Provide input ciphertext: ").upper().replace(" ","")))
     # # #HELLOWORLDIAMBOB
     # # #ZFBQMUAHSEDNLYNE
+    plaintext = "HELLOWORLDIAMBOB"
+    ciphertext= "ZFBQMUAHSEDNLYNE"
     print("plain:", plaintext, "cipher:", ciphertext, "has been inputted")
     currentMenu, letterMOArray = menuBuilder(plaintext,ciphertext)
     # print(currentMenu)
-    # rotorsUsed = [0, 1, 2]
-    # rotorPosition = [0,0,0]
-    # reflectorUsed = 1
-    rotorsUsed = list(map(int, list(filter(str.isnumeric, input("Which rotors should be used? (Input as Num Num Num]', limit 0-4): ").replace(" ", "")))))
-    print("rotorsUsed:",rotorsUsed, type(rotorsUsed), type(rotorsUsed[0]))
-    rotorPosition = list(map(int, list(filter(str.isnumeric, input("Which rotor starting position should be used? (Input as Num Num Num]', limit 0-25): ").replace(" ", "")))))
-    print("rotorPosition:",rotorPosition)
-    reflector = int(input("Which reflector should be used?"))
-    print("Reflector:",reflector)
+    rotorsUsed = [0, 1, 2]
+    rotorPosition = [0,0,2]
+    reflectorUsed = 1
+    # rotorsUsed = list(map(int, list(filter(str.isnumeric, input("Which rotors should be used? (Input as Num Num Num]', limit 0-4): ").replace(" ", "")))))
+    # print("rotorsUsed:",rotorsUsed, type(rotorsUsed), type(rotorsUsed[0]))
+    # reflectorUsed = int(input("Which reflector should be used?"))
+    # print("Reflector:",reflector)
     instanceNum = int(input("How many instances would you like to run?: "))
-    startBombe(instanceNum,currentMenu,letterMOArray)
+    startBombe(
+        instanceNum=instanceNum,
+        currentmenu=currentMenu,
+        letterMOArray=letterMOArray,
+        rotorsUsed=rotorsUsed,
+        reflectorUsed=reflectorUsed
+        )
 
