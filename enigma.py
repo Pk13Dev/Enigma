@@ -1,31 +1,31 @@
 # Hardcodded rotor, reflector and entry disc wirings alligned with the Enigma I (Specifically service Enigma used by the German Army and Air Force)
-rotor = [
-    ["E","K","M","F","L","G","D","Q","V","Z","N","T","O","W","Y","H","X","U","S","P","A","I","B","R","C","J"],
-    ["A","J","D","K","S","I","R","U","X","B","L","H","W","T","M","C","Q","G","Z","N","P","Y","F","V","O","E"],
-    ["B","D","F","H","J","L","C","P","R","T","X","V","Z","N","Y","E","I","W","G","A","K","M","U","S","Q","O"],
-    ["E","S","O","V","P","Z","J","A","Y","Q","U","I","R","H","X","L","N","F","T","G","K","D","C","M","W","B"],
-    ["V","Z","B","R","G","I","T","Y","U","P","S","D","N","H","L","X","A","W","M","J","Q","O","F","E","C","K"]
-]
+rotor = (
+    ("E","K","M","F","L","G","D","Q","V","Z","N","T","O","W","Y","H","X","U","S","P","A","I","B","R","C","J"),
+    ("A","J","D","K","S","I","R","U","X","B","L","H","W","T","M","C","Q","G","Z","N","P","Y","F","V","O","E"),
+    ("B","D","F","H","J","L","C","P","R","T","X","V","Z","N","Y","E","I","W","G","A","K","M","U","S","Q","O"),
+    ("E","S","O","V","P","Z","J","A","Y","Q","U","I","R","H","X","L","N","F","T","G","K","D","C","M","W","B"),
+    ("V","Z","B","R","G","I","T","Y","U","P","S","D","N","H","L","X","A","W","M","J","Q","O","F","E","C","K")
+)
 
-reflector = [
-    ["E","J","M","Z","A","L","Y","X","V","B","W","F","C","R","Q","U","O","N","T","S","P","I","K","H","G","D"],
-    ["Y","R","U","H","Q","S","L","D","P","X","N","G","O","K","M","I","E","B","F","Z","C","W","V","J","A","T"],
-    ["F","V","P","J","I","A","O","Y","E","D","R","Z","X","W","G","C","T","K","U","Q","S","B","N","M","H","L"]
-]
+reflector = (
+    ("E","J","M","Z","A","L","Y","X","V","B","W","F","C","R","Q","U","O","N","T","S","P","I","K","H","G","D"),
+    ("Y","R","U","H","Q","S","L","D","P","X","N","G","O","K","M","I","E","B","F","Z","C","W","V","J","A","T"),
+    ("F","V","P","J","I","A","O","Y","E","D","R","Z","X","W","G","C","T","K","U","Q","S","B","N","M","H","L")
+)
 
-entry = [
+entry = (
     "A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"
-]
+)
 
 # Rotor Turnover points for each rotor respectively
-rotorTurnover = ["Q","E","V","J","Z"]
+rotorTurnover = ("Q","E","V","J","Z")
 
 def startEnigma(plainText):
-    rotorsUsed = [0, 1, 2]     
+    rotorsUsed = [0, 3, 2]     
     reflectorUsed = 1            
 
     ringstellung = [0, 0, 0]     
-    rotorPosision = [0, 0, 0]    
+    rotorPosision = [3, 14, 2]    
 
     plugboard = {
         "A":"M", "M":"A",
